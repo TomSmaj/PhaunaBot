@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node --env-file=.env server.js"
   },
   "repository": {
     "type": "git",
@@ -15,5 +16,10 @@
     "url": "https://github.com/TomSmaj/PhaunaBot/issues"
   },
   "homepage": "https://github.com/TomSmaj/PhaunaBot#readme",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "express": "^5.1.0",
+    "node-telegram-bot-api": "^0.66.0",
+    "require": "^2.4.20"
+  }
 }
