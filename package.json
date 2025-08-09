@@ -19,7 +19,8 @@
   "description": "",
   "dependencies": {
     "express": "^5.1.0",
-    "node-telegram-bot-api": "^0.66.0",
-    "require": "^2.4.20"
+    "googleapis": "^105.0.0",
+    "node-telegram-bot-api": "^0.63.0",
+    "require": "^0.4.4"
   }
 }
