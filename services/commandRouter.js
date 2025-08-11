@@ -13,7 +13,7 @@ const telegramChatIdList = process.env.ACCEPTED_TELEGRAM_CHAT_IDS.split(",");
  * @sideeffect Sends a Telegram message to the specified chat
  */
 function returnError(chatId, messageType) {
-  if (messageType === "/list-events")
+  if (messageType === "/listEvents")
     reply(
       chatId,
       "Error! a list-events message should be in the format: /listEvents, NUMBER_OF_EVENTS"
@@ -79,6 +79,7 @@ async function handleListEvents(chatId, args) {
   }
   const calData = await cal.listEvents(eventNum);
   reply(chatId, formatEventListItems(calData.items));
+  //returnError(chatId, "/listEvents");
 }
 
 /**

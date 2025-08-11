@@ -50,11 +50,11 @@ router.get("/redirect", (req, res) => {
  */
 router.get("/start", async (req, res) => {
   oAuth2Client = await loadCredentials();
-  const authUrl = oAuth2Client.generateAuthUrl({
+  /*const authUrl = oAuth2Client.generateAuthUrl({
     access_type: "offline",
     scope: SCOPES,
-  });
-  console.log("Authorize this app by visiting this url:", authUrl);
+  });*/
+  const authUrl = await getAccessToken();
   res.redirect(authUrl);
 });
 
@@ -93,12 +93,14 @@ async function loadSavedToken() {
  * @sideeffect Logs the consent URL to stdout
  * @returns {void}
  */
-function getAccessToken() {
+async function getAccessToken() {
   const authUrl = oAuth2Client.generateAuthUrl({
     access_type: "offline",
+    prompt: "consent",
     scope: SCOPES,
   });
   console.log("Authorize this app by visiting this url:", authUrl);
+  return authUrl;
 }
 
 /**
