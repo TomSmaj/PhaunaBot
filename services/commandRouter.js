@@ -1,6 +1,7 @@
 import * as cal from "./calendarService.js";
 import { bot, reply } from "./telegramService.js";
 const telegramChatIdList = process.env.ACCEPTED_TELEGRAM_CHAT_IDS.split(",");
+const defaultEventNum = 5;
 
 /**
  * Sends a usage-format error message to the given Telegram chat
@@ -81,11 +82,14 @@ function formatEventListItems(items) {
  * // "2025-08-15T19:00:00-05:00"
  */
 function formatAddEventTime(dateStr, timeStr, offset = -5) {
+  // Normalize spacing so "7:00PM" -> "7:00 PM"
+  const normalizedTime = timeStr.replace(/(am|pm)$/i, " $1").trim();
+
   // Parse date parts
   const [month, day, year] = dateStr.split("/").map((p) => parseInt(p, 10));
 
   // Parse time parts
-  let [time, meridiem] = timeStr.trim().split(/\s+/);
+  let [time, meridiem] = normalizedTime.split(/\s+/);
   let [hours, minutes] = time.split(":").map((p) => parseInt(p, 10));
 
   meridiem = meridiem.toUpperCase();
@@ -97,9 +101,6 @@ function formatAddEventTime(dateStr, timeStr, offset = -5) {
     hours = 0;
   }
 
-  // Build date object in local system timezone
-  const date = new Date(year, month - 1, day, hours, minutes || 0, 0);
-
   // Format offset
   const offsetHours = Math.floor(Math.abs(offset));
   const offsetMinutes = Math.abs((offset % 1) * 60);
@@ -108,15 +109,14 @@ function formatAddEventTime(dateStr, timeStr, offset = -5) {
     offsetMinutes
   ).padStart(2, "0")}`;
 
-  // Format final string
-  const isoDate = date.toISOString().slice(0, 19); // UTC string without Z
-  const localDate = `${year}-${String(month).padStart(2, "0")}-${String(
-    day
-  ).padStart(2, "0")}T${String(hours).padStart(2, "0")}:${String(
-    minutes
-  ).padStart(2, "0")}:00${tz}`;
-
-  return localDate;
+  // Build final string
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(
+    2,
+    "0"
+  )}T${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+    2,
+    "0"
+  )}:00${tz}`;
 }
 
 /**
@@ -133,11 +133,12 @@ function formatAddEventTime(dateStr, timeStr, offset = -5) {
 async function handleListEvents(chatId, args) {
   const messageType = args[0];
   try {
-    const [, eventNum] = args;
-    if (args.length !== 2) {
+    let [, eventNum] = args;
+    /*if (args.length !== 2) {
       returnError(chatId, messageType);
       return;
-    }
+    }*/
+    if (eventNum === null) eventNum = defaultEventNum;
     const calData = await cal.listEvents(eventNum);
     reply(chatId, formatEventListItems(calData.items));
   } catch {
