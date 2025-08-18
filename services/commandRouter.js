@@ -8,16 +8,24 @@ const telegramChatIdList = process.env.ACCEPTED_TELEGRAM_CHAT_IDS.split(",");
  *
  * @function returnError
  * @param {number|string} chatId - Telegram chat ID to send the error message to
- * @param {string} messageType - The command type (e.g., "/list-events")
+ * @param {string} messageType - The command type (e.g., "/listevents")
  * @returns {void}
  * @sideeffect Sends a Telegram message to the specified chat
  */
 function returnError(chatId, messageType) {
-  if (messageType === "/listEvents")
+  if (messageType === "/listevents")
     reply(
       chatId,
-      "Error! a list-events message should be in the format: /listEvents, NUMBER_OF_EVENTS"
+      "Error! a listevents message should be in the format: /listevents NUMBER_OF_EVENTS"
     );
+  else if (messageType === "/addevents") {
+    reply(
+      chatId,
+      'Error! an addevent message should be in the format: /addevent "Event Title" 1/1/2000 7:00 PM 8:00 PM'
+    );
+  } else {
+    reply(chatId, "Error!");
+  }
 }
 
 /**
@@ -61,36 +69,150 @@ function formatEventListItems(items) {
 }
 
 /**
- * Handles the `/listEvents` command by fetching the specified number of events
+ * Combines a date string and time string into an ISO 8601 timestamp with offset.
+ *
+ * @param {string} dateStr - Date string in M/D/YYYY format (e.g., "8/15/2025")
+ * @param {string} timeStr - Time string in h:mm AM/PM format (e.g., "7:00 PM")
+ * @param {number} [offset=-5] - Timezone offset in hours (default is -5 for CST/CDT)
+ * @returns {string} ISO timestamp in the format YYYY-MM-DDTHH:mm:ss±HH:MM
+ *
+ * @example
+ * formatDateTime("8/15/2025", "7:00 PM");
+ * // "2025-08-15T19:00:00-05:00"
+ */
+function formatAddEventTime(dateStr, timeStr, offset = -5) {
+  // Parse date parts
+  const [month, day, year] = dateStr.split("/").map((p) => parseInt(p, 10));
+
+  // Parse time parts
+  let [time, meridiem] = timeStr.trim().split(/\s+/);
+  let [hours, minutes] = time.split(":").map((p) => parseInt(p, 10));
+
+  meridiem = meridiem.toUpperCase();
+
+  if (meridiem === "PM" && hours !== 12) {
+    hours += 12;
+  }
+  if (meridiem === "AM" && hours === 12) {
+    hours = 0;
+  }
+
+  // Build date object in local system timezone
+  const date = new Date(year, month - 1, day, hours, minutes || 0, 0);
+
+  // Format offset
+  const offsetHours = Math.floor(Math.abs(offset));
+  const offsetMinutes = Math.abs((offset % 1) * 60);
+  const sign = offset >= 0 ? "+" : "-";
+  const tz = `${sign}${String(offsetHours).padStart(2, "0")}:${String(
+    offsetMinutes
+  ).padStart(2, "0")}`;
+
+  // Format final string
+  const isoDate = date.toISOString().slice(0, 19); // UTC string without Z
+  const localDate = `${year}-${String(month).padStart(2, "0")}-${String(
+    day
+  ).padStart(2, "0")}T${String(hours).padStart(2, "0")}:${String(
+    minutes
+  ).padStart(2, "0")}:00${tz}`;
+
+  return localDate;
+}
+
+/**
+ * Handles the `/listevents` command by fetching the specified number of events
  * from Google Calendar and sending them to the Telegram chat.
  *
  * @async
  * @function handleListEvents
  * @param {number|string} chatId - Telegram chat ID
- * @param {string[]} args - Command arguments (expected: ["/listEvents", "NUM"])
+ * @param {string[]} args - Command arguments (expected: ["/listevents", "NUM"])
  * @returns {Promise<void>}
  * @sideeffect Sends a formatted events list to the Telegram chat
  */
 async function handleListEvents(chatId, args) {
-  const [messageType, eventNum] = args;
-  if (args.length !== 2) {
+  const messageType = args[0];
+  try {
+    const [, eventNum] = args;
+    if (args.length !== 2) {
+      returnError(chatId, messageType);
+      return;
+    }
+    const calData = await cal.listEvents(eventNum);
+    reply(chatId, formatEventListItems(calData.items));
+  } catch {
     returnError(chatId, messageType);
-    return;
   }
-  const calData = await cal.listEvents(eventNum);
-  reply(chatId, formatEventListItems(calData.items));
-  //returnError(chatId, "/listEvents");
+}
+
+// e.g. of add event request
+// /addevent "Valhalla Show" 8/15/2025 10:00 pm 11:00 pm
+async function handleAddEvent(chatId, args) {
+  const messageType = args[0];
+  try {
+    if (args.length !== 5) {
+      returnError(chatId, messageType);
+      return;
+    }
+    const [, summary, date, start, end] = args;
+    const startTime = formatAddEventTime(date, start);
+    const endTime = formatAddEventTime(date, end);
+    const calData = await cal.addEvent(summary, startTime, endTime);
+    if (calData.status === "confirmed") reply(chatId, "event confirmed");
+    else reply(chatId, "error");
+  } catch {
+    returnError(chatId, messageType);
+  }
 }
 
 /**
- * Splits a comma-separated string into trimmed argument segments.
+ * Normalize “smart quotes” and odd whitespace to plain quotes/spaces.
+ * - “ ” → "
+ * - ‘ ’ → '
+ * - Non-breaking spaces → regular spaces
+ */
+function normalizeInput(text) {
+  return text
+    .replace(/[\u201C\u201D]/g, '"') // curly double → "
+    .replace(/[\u2018\u2019]/g, "'") // curly single → '
+    .replace(/\u00A0/g, " "); // non-breaking space → space
+}
+
+/**
+ * Splits a command string into arguments.
+ * - Respects quoted strings (single '...' or double "..." quotes).
+ * - Keeps "AM/PM" together with the preceding time (e.g., "7:00 AM").
  *
- * @function parseArgs
- * @param {string} text - Command text from Telegram message
- * @returns {string[]} Array of trimmed command arguments
+ * @param {string} text - Input text to parse
+ * @returns {string[]} Array of parsed arguments
+ * @example
+ * parseCommand("listEvents 5 'Band Practice' 7:00 AM");
+ * // ["listEvents", "5", "Band Practice", "7:00 AM"]
  */
 function parseArgs(text) {
-  return text.split(",").map((s) => s.trim());
+  let normText = normalizeInput(text);
+  //return text.split(",").map((s) => s.trim());
+  const regex = /"([^"]*)"|'([^']*)'|(\S+\s(?:AM|PM|am|pm))|(\S+)/g;
+  const args = [];
+  let match;
+
+  while ((match = regex.exec(normText)) !== null) {
+    if (match[1]) {
+      // Double-quoted text
+      args.push(match[1]);
+    } else if (match[2]) {
+      // Single-quoted text
+      args.push(match[2]);
+    } else if (match[3]) {
+      // Time with AM/PM
+      args.push(match[3]);
+    } else if (match[4]) {
+      // Regular token
+      args.push(match[4]);
+    }
+  }
+
+  return args;
 }
 
 /**
@@ -109,12 +231,15 @@ bot.on("message", (msg) => {
     reply(chatId, "Access Denied");
   } else {
     const args = parseArgs(msg.text);
+    // console.log(args);
     const messageType = args[0];
     if (messageType === "/start") {
       console.log(msg);
       reply(chatId, "Hi I'm PhaunaBot!");
-    } else if (messageType === "/listEvents") {
+    } else if (messageType === "/listevents") {
       handleListEvents(chatId, args);
+    } else if (messageType === "/addevent") {
+      handleAddEvent(chatId, args);
     } else {
       reply(chatId, "Command not recognized");
     }

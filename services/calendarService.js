@@ -5,6 +5,7 @@ import { google } from "googleapis";
 import express from "express";
 
 const router = express.Router();
+const timezone_const = "America/Chicago";
 
 const SCOPES = ["https://www.googleapis.com/auth/calendar.events"];
 const TOKEN_PATH = path.join(process.cwd(), "token.json");
@@ -159,6 +160,26 @@ export async function listEvents(num) {
     maxResults: num,
     singleEvents: true,
     orderBy: "startTime",
+  });
+  return res.data;
+}
+
+export async function addEvent(summary, start, end) {
+  const calendar = await getCalendar();
+  const event = {
+    summary: summary,
+    start: {
+      dateTime: start,
+      timezone: timezone_const,
+    },
+    end: {
+      dateTime: end,
+      timezone: timezone_const,
+    },
+  };
+  const res = await calendar.events.insert({
+    calendarId: "primary",
+    resource: event,
   });
   return res.data;
 }
