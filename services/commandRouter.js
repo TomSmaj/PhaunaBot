@@ -232,13 +232,13 @@ function parseArgs(text) {
 bot.on("message", (msg) => {
   const chatId = msg.chat.id;
   if (!telegramChatIdList.includes(chatId.toString())) {
+    console.log(msg);
     reply(chatId, "Access Denied");
   } else {
     const args = parseArgs(msg.text);
     // console.log(args);
     const messageType = args[0];
     if (messageType === "/start") {
-      console.log(msg);
       reply(chatId, "Hi I'm PhaunaBot!");
     } else if (messageType === "/listevents") {
       handleListEvents(chatId, args);
