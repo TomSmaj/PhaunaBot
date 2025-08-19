@@ -14,7 +14,7 @@ const CREDENTIALS_PATH = path.join(process.cwd(), "google_credentials.json");
 let oAuth2Client;
 
 /**
- * GET /redirect
+ * GET /redirect (/auth/google/redirect)
  * Handles the OAuth 2.0 redirect from Google after consent.
  * Extracts the authorization code, exchanges it for tokens, sets the OAuth2 client
  * credentials, and persists the token to disk at TOKEN_PATH.
@@ -39,7 +39,7 @@ router.get("/redirect", (req, res) => {
 });
 
 /**
- * GET /start
+ * GET /start (/auth/google/start)
  * Begins the Google OAuth 2.0 flow by reading local credentials, creating an OAuth client,
  * generating a consent URL, and redirecting the browser to Google.
  *

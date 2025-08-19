@@ -1,7 +1,7 @@
 import * as cal from "./calendarService.js";
 import { bot, reply } from "./telegramService.js";
 const telegramChatIdList = process.env.ACCEPTED_TELEGRAM_CHAT_IDS.split(",");
-const defaultEventNum = 5;
+const defaultEventNum = "5";
 
 /**
  * Sends a usage-format error message to the given Telegram chat
@@ -17,7 +17,7 @@ function returnError(chatId, messageType) {
   if (messageType === "/listevents")
     reply(
       chatId,
-      "Error! a listevents message should be in the format: /listevents NUMBER_OF_EVENTS"
+      "Error! a listevents message should be in the format: /listevents NUMBER_OF_EVENTS, OR /listevents"
     );
   else if (messageType === "/addevents") {
     reply(
@@ -138,10 +138,13 @@ async function handleListEvents(chatId, args) {
       returnError(chatId, messageType);
       return;
     }*/
-    if (eventNum === null) eventNum = defaultEventNum;
+    if (eventNum === undefined) {
+      eventNum = defaultEventNum;
+    }
     const calData = await cal.listEvents(eventNum);
     reply(chatId, formatEventListItems(calData.items));
-  } catch {
+  } catch (error) {
+    console.log(error);
     returnError(chatId, messageType);
   }
 }
