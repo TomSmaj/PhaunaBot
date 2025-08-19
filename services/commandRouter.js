@@ -19,10 +19,15 @@ function returnError(chatId, messageType) {
       chatId,
       "Error! a listevents message should be in the format: /listevents NUMBER_OF_EVENTS, OR /listevents"
     );
-  else if (messageType === "/addevents") {
+  else if (messageType === "/addevent") {
     reply(
       chatId,
       'Error! an addevent message should be in the format: /addevent "Event Title" 1/1/2000 7:00 PM 8:00 PM'
+    );
+  } else if (messageType === "/addeventspan") {
+    reply(
+      chatId,
+      'Error! an addeventspan message should be in the format: /addeventspan "Event Title" 1/1/2000 - 1/15/2000'
     );
   } else {
     reply(chatId, "Error!");
@@ -149,6 +154,28 @@ async function handleListEvents(chatId, args) {
   }
 }
 
+async function handleAddEventSpan(chatId, args) {
+  const messageType = args[0];
+  const defaultTime = "12:00 PM";
+  try {
+    if (args.length !== 5 && args[3] !== "-") {
+      returnError(chatId, messageType);
+      return;
+    }
+    const [, summary, startTime, , endTime] = args;
+    const startDateFormatted = formatAddEventTime(startTime, defaultTime);
+    const endDateFormatted = formatAddEventTime(endTime, defaultTime);
+    const calData = await cal.addEvent(
+      summary,
+      startDateFormatted,
+      endDateFormatted
+    );
+    if (calData.status === "confirmed") reply(chatId, "event confirmed");
+  } catch {
+    returnError(chatId, messageType);
+  }
+}
+
 // e.g. of add event request
 // /addevent "Valhalla Show" 8/15/2025 10:00 pm 11:00 pm
 async function handleAddEvent(chatId, args) {
@@ -244,6 +271,8 @@ bot.on("message", (msg) => {
       handleListEvents(chatId, args);
     } else if (messageType === "/addevent") {
       handleAddEvent(chatId, args);
+    } else if (messageType === "/addeventspan") {
+      handleAddEventSpan(chatId, args);
     } else {
       reply(chatId, "Command not recognized");
     }
