@@ -49,6 +49,7 @@ function formatEventListItems(items) {
     .map((item) => {
       const summary = item.summary?.trim() || "No title";
       const startValue = item.start?.dateTime || item.start?.date || null;
+      const endValue = item.end?.dateTime || item.end?.date || null;
 
       let formattedStart = "No start date";
       if (startValue) {
@@ -64,7 +65,25 @@ function formatEventListItems(items) {
 
         formattedStart = `${month}/${day}/${year} ${hours}:${minutes} ${ampm}`;
       }
-      return `• ${summary} - ${formattedStart}`;
+      let formattedEnd = "No end date";
+      if (endValue) {
+        const date = new Date(endValue);
+        const month = date.getMonth() + 1; // Months are zero-based
+        const day = date.getDate();
+        const year = date.getFullYear();
+
+        let hours = date.getHours();
+        const minutes = date.getMinutes().toString().padStart(2, "0");
+        const ampm = hours >= 12 ? "pm" : "am";
+        hours = hours % 12 || 12; // Convert to 12-hour format
+
+        formattedEnd = `${month}/${day}/${year} ${hours}:${minutes} ${ampm}`;
+      }
+      // if start and end date are on different days, include both in printed response
+      if(formattedStart.substring(0,10) !== formattedEnd.substring(0,10)){
+        return `• ${summary}: ${formattedStart.substring(0,10)} - ${formattedEnd.substring(0,10)}`;
+      }
+      return `• ${summary}: ${formattedStart}`;
     })
     .join("\n");
 }
@@ -134,10 +153,7 @@ async function handleListEvents(chatId, args) {
   const messageType = args[0];
   try {
     let [, eventNum] = args;
-    /*if (args.length !== 2) {
-      returnError(chatId, messageType);
-      return;
-    }*/
+
     if (eventNum === undefined) {
       eventNum = defaultEventNum;
     }
