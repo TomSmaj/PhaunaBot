@@ -1,0 +1,7 @@
+{   
+    "help":{
+        "listevents":"/listevents [number of events] \n\n/listevents followed by no number will return default number of events",
+        "addevent":"/addevent [name of event] [date mm/dd/yyyy] [start time XX:XX] [AM/PM] [end time XX:XX] [AM/PM]\n\nIf name of event is multiple words long enclose within \" \" or ' '",
+        "addeventspan":"/addeventspan [name of event] [start date mm/dd/yyyy] - [end date mm/dd/yyyy]\n\nIf name of event is multiple words long enclose within \" \" or ' '"
+    }
+}

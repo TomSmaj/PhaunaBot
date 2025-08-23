@@ -1,7 +1,19 @@
 import * as cal from "./calendarService.js";
 import { bot, reply } from "./telegramService.js";
 const telegramChatIdList = process.env.ACCEPTED_TELEGRAM_CHAT_IDS.split(",");
+import messageText from "../utils/messages.json" with { type : 'json' };
 const defaultEventNum = "5";
+
+function sendInstructions(chatId, messageType) {
+  const helpMessageText = messageText.help;
+  const strippedMessageType =  messageType.substring(1);
+  if(strippedMessageType in helpMessageText){
+    reply(chatId, helpMessageText[strippedMessageType])
+  }
+  else{
+    returnError(chatId, messageType);
+  }
+}
 
 /**
  * Sends a usage-format error message to the given Telegram chat
@@ -14,24 +26,7 @@ const defaultEventNum = "5";
  * @sideeffect Sends a Telegram message to the specified chat
  */
 function returnError(chatId, messageType) {
-  if (messageType === "/listevents")
-    reply(
-      chatId,
-      "Error! a listevents message should be in the format: /listevents NUMBER_OF_EVENTS, OR /listevents"
-    );
-  else if (messageType === "/addevent") {
-    reply(
-      chatId,
-      'Error! an addevent message should be in the format: /addevent "Event Title" 1/1/2000 7:00 PM 8:00 PM'
-    );
-  } else if (messageType === "/addeventspan") {
-    reply(
-      chatId,
-      'Error! an addeventspan message should be in the format: /addeventspan "Event Title" 1/1/2000 - 1/15/2000'
-    );
-  } else {
-    reply(chatId, "Error!");
-  }
+  reply(chatId, "Oops! something went wrong.");
 }
 
 /**
@@ -158,7 +153,7 @@ async function handleAddEventSpan(chatId, args) {
   const messageType = args[0];
   const defaultTime = "12:00 PM";
   try {
-    if (args.length !== 5 && args[3] !== "-") {
+    if (args.length !== 5 || args[3] !== "-") {
       returnError(chatId, messageType);
       return;
     }
@@ -265,7 +260,9 @@ bot.on("message", (msg) => {
     const args = parseArgs(msg.text);
     // console.log(args);
     const messageType = args[0];
-    if (messageType === "/start") {
+    if (args.length === 2 && args[1] === "?") {
+      sendInstructions(chatId, messageType);
+    } else if (messageType === "/start") {
       reply(chatId, "Hi I'm PhaunaBot!");
     } else if (messageType === "/listevents") {
       handleListEvents(chatId, args);
