@@ -169,11 +169,11 @@ async function handleAddEventSpan(chatId, args) {
   const messageType = args[0];
   const defaultTime = "12:00 PM";
   try {
-    if (args.length !== 5 || args[3] !== "-") {
+    if (args.length !== 4) {
       returnError(chatId, messageType);
       return;
     }
-    const [, summary, startTime, , endTime] = args;
+    const [, summary, startTime, endTime] = args;
     const startDateFormatted = formatAddEventTime(startTime, defaultTime);
     const endDateFormatted = formatAddEventTime(endTime, defaultTime);
     const calData = await cal.addEvent(
