@@ -2,6 +2,7 @@ services:
   app:
     build: .
     container_name: phaunabot
+    restart: always
     ports:
       - "3002:3002"
     volumes:
