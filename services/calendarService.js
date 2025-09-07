@@ -162,6 +162,7 @@ export async function listEvents(num) {
     orderBy: "startTime",
     timeZone: timezone_const,
   });
+  console.log(res.data);
   return res.data;
 }
 
