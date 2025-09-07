@@ -51,6 +51,9 @@ function formatEventListItems(items) {
       const startValue = item.start?.dateTime || item.start?.date || null;
       const endValue = item.end?.dateTime || item.end?.date || null;
 
+      console.log(startValue);
+      console.log(endValue);
+
       let formattedStart = "No start date";
       if (startValue) {
         const date = new Date(startValue);
