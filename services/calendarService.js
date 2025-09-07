@@ -160,6 +160,7 @@ export async function listEvents(num) {
     maxResults: num,
     singleEvents: true,
     orderBy: "startTime",
+    timeZone: timezone_const,
   });
   return res.data;
 }
