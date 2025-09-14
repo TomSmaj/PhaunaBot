@@ -12,4 +12,4 @@ services:
     tty: true
     command: npm start
     environment:
-      - TZ: "American/Chicago"
+      - TZ: American/Chicago
