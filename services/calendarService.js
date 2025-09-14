@@ -5,7 +5,7 @@ import { google } from "googleapis";
 import express from "express";
 
 const router = express.Router();
-const timezone_const = "America/Chicago";
+const timezone_const = process.env.TIMEZONE;
 
 const SCOPES = ["https://www.googleapis.com/auth/calendar.events"];
 const TOKEN_PATH = path.join(process.cwd(), "token.json");
