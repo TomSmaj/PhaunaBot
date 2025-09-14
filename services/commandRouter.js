@@ -51,13 +51,9 @@ function formatEventListItems(items) {
       const startValue = item.start?.dateTime || item.start?.date || null;
       const endValue = item.end?.dateTime || item.end?.date || null;
 
-      console.log(startValue);
-      console.log(endValue);
-
       let formattedStart = "No start date";
       if (startValue) {
         const date = new Date(startValue);
-        console.log(date);
         const month = date.getMonth() + 1; // Months are zero-based
         const day = date.getDate();
         const year = date.getFullYear();
@@ -66,7 +62,6 @@ function formatEventListItems(items) {
         const minutes = date.getMinutes().toString().padStart(2, "0");
         const ampm = hours >= 12 ? "pm" : "am";
         hours = hours % 12 || 12; // Convert to 12-hour format
-        console.log(hours);
         formattedStart = `${month}/${day}/${year} ${hours}:${minutes} ${ampm}`;
       }
       let formattedEnd = "No end date";
